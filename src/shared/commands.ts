@@ -1,6 +1,6 @@
 const readline = require('readline');
 
-module.exports = {
+export default {
     close: () => process.stdin.pause(),
     clean: () => process.stdout.write("\x1Bc"),
     showCursor: () => process.stdout.write("\x1b[?25h"),

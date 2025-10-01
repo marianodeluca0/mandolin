@@ -1,14 +1,7 @@
-const readline = require('readline');
-const commands = require('./commands');
-const errors = require('./errors');
-
-type Key = { name?: string; ctrl?: boolean };
-
-interface SelectConfig {
-    nottyFallbackText?: string;
-    onAfterSelection?(value: string): void;
-    onCancel?(): void;
-}
+import commands from '../shared/commands';
+import errors from "../shared/errors";
+import * as readline from 'readline';
+import { SelectConfig } from '../types';
 
 function paintRow(options: string[], row: number, selected: boolean) {
 
@@ -34,7 +27,7 @@ function noTTYPaintRow(options: string[], stream: NodeJS.WriteStream) {
 
 const selectLine = (opt: string, isSelected: boolean) => isSelected ? commands.highLightLine(opt) : `  ${opt}`;
 
-async function select(
+export async function select(
     options: string[],
     config?: SelectConfig
 ): Promise<string> {
@@ -49,7 +42,7 @@ async function select(
 
             const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
             noTTYPaintRow(options, process.stdout);
-            rl.question(config?.nottyFallbackText ?? '', (ans: string) => {
+            rl.question(config?.noTTYFallbackText ?? '', (ans: string) => {
                 rl.close();
                 const n = Math.max(1, Math.min(options.length, parseInt(ans, 10) || 1));
                 resolve(options[n - 1] ?? '');
@@ -69,7 +62,7 @@ async function select(
         process.stdout.write("");
 
         let index = 0;
-        const onKeypress = (_: string, key: Key) => {
+        const onKeypress = (_: string, key: readline.Key) => {
 
             if (key?.name === "up") {
 
@@ -112,5 +105,3 @@ async function select(
         process.stdin.on("keypress", onKeypress);
     });
 }
-
-module.exports = select;

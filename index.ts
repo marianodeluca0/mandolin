@@ -1,25 +1,54 @@
-const input = require("./src/input");
-const select = require("./src/select");
-const commands = require('./src/commands');
+import { input, select } from "./src/inputs";
+import commands from "./src/shared/commands";
+import { MlinBuilder } from "./src/core/mlin";
 
-// Esempio d'uso
+
+export interface Theme {
+	primary: string;
+	accent: string;
+	secondary: string;
+	contrastText: string;
+}
+
+const theme: Theme = {
+	primary: '129',
+	accent: '135',
+	secondary: '90',
+	contrastText: '246'
+}
+
 if (require.main === module) {
-  (async () => {
 
-    commands.clean();
+	(async () => {
 
-    const choice = await select(["Opzione 1", "Opzione 2", "Opzione 3"]);
-    console.log("Risultato:", choice);
+		commands.clean();
 
-    const choice2 = await select(["Opzione 1a", "Opzione 2a", "Opzione 3a"]);
-    console.log("Risultato:", choice2);
+		const startLine = MlinBuilder
+			.text('➤ ')
+			.color(theme.secondary)
+			.build();
 
-    const text = await input();
-    console.log("text result 1:", text);
+		const name = MlinBuilder
+			.text('Choose a name: ')
+			.build();
 
-    const text2 = await input();
-    console.log("text result 2:", text2);
+		console.log(startLine, name);
 
-    commands.close();
-  })();
+		const nameResult = await input();
+		
+		const template = MlinBuilder
+			.text('Choose a name: ')
+			.build();
+
+		console.log(startLine, template);
+		
+		const selection = await select(['TS', 'JS', 'React']);
+
+		console.log(nameResult);
+		console.log(selection);
+		
+		commands.close();
+
+	})();
+
 }

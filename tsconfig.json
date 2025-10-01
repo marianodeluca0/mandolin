@@ -1,37 +1,37 @@
 {
   "compilerOptions": {
-    // File Layout
-    // "rootDir": "./src",
-    // "outDir": "./dist",
-    // Environment Settings
-    // See also https://aka.ms/tsconfig/module
-    "module": "nodenext",
-    "target": "esnext",
+    /* Layout */
+    "rootDir": "./",
+    "outDir": "./dist",
+
+    /* Ambiente Node */
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es2020",
+    "lib": ["es2020"],
     "types": ["node"],
-    // For nodejs:
-    // "lib": ["esnext"],
-    // "types": ["node"],
-    // and npm install -D @types/node
-    // Other Outputs
+
+    /* Output */
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
-    // Stricter Typechecking Options
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    // Style Options
+
+    /* Sicurezza e tipizzazione */
+    "strict": true,
     "noImplicitReturns": true,
     "noImplicitOverride": true,
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true,
-    "noPropertyAccessFromIndexSignature": true,
-    // Recommended Options
-    "strict": true,
-    "verbatimModuleSyntax": true,
-    "isolatedModules": true,
-    "noUncheckedSideEffectImports": true,
-    "moduleDetection": "force",
+    "exactOptionalPropertyTypes": true,
+    "noUncheckedIndexedAccess": true,
     "skipLibCheck": true,
-  }
+
+    /* ⚙️ Disabilita ESM enforcement */
+    "verbatimModuleSyntax": false,
+    "isolatedModules": false,
+    "moduleDetection": "auto",
+    "noUncheckedSideEffectImports": false
+  },
+  "include": ["src"]
 }

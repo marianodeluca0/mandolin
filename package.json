@@ -4,8 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.ts"
+    "dev": "ts-node index.ts"
   },
+  "type": "commonjs",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/marianodeluca0/mandolin.git"
