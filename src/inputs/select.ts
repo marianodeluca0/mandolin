@@ -26,24 +26,18 @@ function noTTYPaintRow(options: string[], stream: NodeJS.WriteStream) {
 }
 
 const selectLine = (opt: string, isSelected: boolean) => isSelected ? commands.highLightLine(opt) : `  ${opt}`;
-
-export async function select(
-    options: string[],
-    config?: SelectConfig
-): Promise<string> {
-
+export async function select(options: string[], config?: SelectConfig): Promise<string> {
     if (options.length === 0) throw new Error(errors.invalidOptions);
 
     return new Promise((resolve, reject) => {
-
         const isTTY = !!(process.stdin.isTTY && process.stdout.isTTY);
 
         if (!isTTY) {
-
             const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-            noTTYPaintRow(options, process.stdout);
+            options.forEach((o, i) => process.stdout.write(`${i + 1}. ${o}\n`));
             rl.question(config?.noTTYFallbackText ?? '', (ans: string) => {
                 rl.close();
+                process.stdin.pause();
                 const n = Math.max(1, Math.min(options.length, parseInt(ans, 10) || 1));
                 resolve(options[n - 1] ?? '');
             });
@@ -51,54 +45,52 @@ export async function select(
         }
 
         readline.emitKeypressEvents(process.stdin);
-        process.stdin.setRawMode?.(true);
+        process.stdin.removeAllListeners("keypress");
+        if (process.stdin.isTTY) {
+            process.stdin.setRawMode(true);
+            process.stdin.resume();
+        }
+
         commands.hideCursor();
 
-        /** Initial render */
+        // initial render
         options.forEach((opt, i) => {
-            const line = selectLine(opt, i === 0);
+            const line = i === 0 ? commands.highLightLine(opt) : `  ${opt}`;
             process.stdout.write(line + "\n");
         });
-        process.stdout.write("");
 
         let index = 0;
         const onKeypress = (_: string, key: readline.Key) => {
-
             if (key?.name === "up") {
-
                 const old = index;
                 index = (index - 1 + options.length) % options.length;
                 paintRow(options, old, false);
                 paintRow(options, index, true);
-
             } else if (key?.name === "down") {
-
                 const old = index;
                 index = (index + 1) % options.length;
                 paintRow(options, old, false);
                 paintRow(options, index, true);
-
             } else if (key?.name === "return" || key?.name === "enter") {
-
                 teardown();
                 const text = options[index] ?? '';
                 config?.onAfterSelection?.(text);
                 resolve(text);
-
             } else if (key?.ctrl && key?.name === "c") {
-
                 teardown();
                 commands.close();
                 process.stdout.write(errors.aborted);
                 config?.onCancel?.();
                 reject(new Error(errors.aborted));
-                
             }
         };
 
         const teardown = () => {
             commands.showCursor();
-            process.stdin.setRawMode?.(false);
+            if (process.stdin.isTTY) {
+                process.stdin.setRawMode(false);
+                process.stdin.pause();
+            }
             process.stdin.off("keypress", onKeypress);
         };
 

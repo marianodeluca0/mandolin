@@ -2,7 +2,6 @@ import { input, select } from "./src/inputs";
 import commands from "./src/shared/commands";
 import { MlinBuilder } from "./src/core/mlin";
 
-
 export interface Theme {
 	primary: string;
 	accent: string;
@@ -32,16 +31,12 @@ if (require.main === module) {
 			.text('Choose a name: ')
 			.build();
 
-		console.log(startLine, name);
-
 		const nameResult = await input();
 		
 		const template = MlinBuilder
 			.text('Choose a name: ')
 			.build();
 
-		console.log(startLine, template);
-		
 		const selection = await select(['TS', 'JS', 'React']);
 
 		console.log(nameResult);

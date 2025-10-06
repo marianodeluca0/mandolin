@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "ts-node index.ts"
+    "dev": "ts-node index.ts",
+    "mlin": "./dist/index.js"
   },
   "type": "commonjs",
   "repository": {
@@ -19,6 +20,7 @@
   "homepage": "https://github.com/marianodeluca0/mandolin#readme",
   "devDependencies": {
     "@types/node": "^24.5.2",
+    "ts-node": "^10.9.2",
     "typescript": "^5.9.2"
   }
 }

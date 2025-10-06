@@ -1,5 +1,4 @@
 import * as readline from "readline";
-// colors.ts
 
 export async function input(
 	question?: string,
@@ -7,20 +6,21 @@ export async function input(
 ): Promise<string> {
 
 	return new Promise((resolve) => {
+		if (process.stdin.isTTY) {
+			process.stdin.setRawMode(false);
+			process.stdin.resume();
+		}
 
 		const rl = readline.createInterface({
 			input: process.stdin,
-			output: process.stdout
+			output: process.stdout,
 		});
 
 		rl.question(question || '', (ans: string) => {
-
-			// rl.close();
 			onAfterEnter?.(ans);
+			rl.close();
+			process.stdin.pause();
 			resolve(ans);
 		});
-
-		return;
 	});
 }
-
