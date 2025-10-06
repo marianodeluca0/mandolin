@@ -1,9 +1,8 @@
 import * as readline from "readline";
 
-export async function input(
-	question?: string,
-	onAfterEnter?: (text: string) => void
-): Promise<string> {
+export type InputPromptType = (question?: string, onAfterEnter?: (text: string) => void) => Promise<string>;
+
+export const inputPrompt: InputPromptType = async (question, onAfterEnter) => {
 
 	return new Promise((resolve) => {
 		if (process.stdin.isTTY) {

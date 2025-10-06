@@ -1,3 +1,5 @@
+import { start } from "repl";
+import { InputPromptType } from "../inputs";
 
 export type TextEffect =
     | 'reset'
