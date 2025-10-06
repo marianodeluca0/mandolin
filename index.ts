@@ -1,6 +1,4 @@
-import { inputPrompt, select } from "./src/inputs";
-import commands from "./src/shared/commands";
-import { MlinBuilder } from "./src/core/mlin";
+import { InputPrompt, SelectPrompt, Styles, Terminal, text } from "./src/core/mlin";
 
 export interface Theme {
 	primary: string;
@@ -16,64 +14,51 @@ const theme: Theme = {
 	contrastText: '246'
 }
 
-const color = (text: string, color: string | number) => `\x1b[38;5;${color}m ${text} \x1b[0m`
+const style: Styles = {
+	color: 129,
+	bgcolor: 90,
+	effect: 'underline'
+};
 
-const bgcolor = (text: string, color: string | number) => `\x1b[48;5;${color}m ${text} \x1b[0m`
-
-const effect = (type: string | number) => `\x1b[${type}m`
-
-export type TextEffect =
-    | 'reset'
-    | 'bold'
-    | 'dim'
-    | 'italic'
-    | 'underline'
-    | 'blink'
-    | 'inverse'
-    | 'hidden'
-    | 'strike';
-
-export const EFFECT_CODES: Record<TextEffect, number> = {
-	reset: 0,
-	bold: 1,
-	dim: 2,
-	italic: 3,
-	underline: 4,
-	blink: 5,
-	inverse: 7,
-	hidden: 8,
-	strike: 9,
+const style2: Styles = {
+	color: 90,
+	bgcolor: 129,
+	effect: 'bold'
 };
 
 if (require.main === module) {
 
 	(async () => {
 
-		commands.clean();
+		const terminal = new Terminal();
+		terminal.newLine("➤  Simple design:  ", style);
+		terminal.newLine("➤  Simple text:  ", style);
+		terminal.draw();
 
-		const text = "➤  Choose a name: ";
+		const advancedTerminal = new Terminal();
+		advancedTerminal.newLine("➤  Enter name:  ", style2);
+		advancedTerminal.newLine(async () => await InputPrompt());
+		advancedTerminal.newLine("➤  Select one option:  ", style2);
+		advancedTerminal.newLine(async () => await SelectPrompt([1, 2, 3]));
+		advancedTerminal.newLine("nice", style2);
+		await advancedTerminal.draw({ closeStream: true });
 
-		console.log(text);
-		
-		// background color
-		console.log(bgcolor(text, 129));
+		await new Terminal([
+			"text inline",
+			"new terminal definition",
+			"Its simple?",
+			async () => await InputPrompt(),
+			"yes very easy",
+			async () => await SelectPrompt([1, 2, 3])
+		]).draw({ closeStream: true });
 
-		// background color
-		console.log(color(text, 246));
-		
-
-		console.log(effect(4) + bgcolor(color(text, 129), 90));
-
-		const nameResult = await inputPrompt();
-		
-		console.log("➤  Choose a type: ");
-
-		const selection = await select(['TS', 'JS', 'React']);
-
-		console.log(nameResult);
-		console.log(selection);
-		
-		commands.close();
+		await new Terminal([
+			text("yes and customizzable", style),
+			text("yes and customizzable", style2),
+			async () => await InputPrompt(),
+			"yes very customizzable",
+			async () => await SelectPrompt([1, 2, 3])
+		]).draw({ closeStream: true });
 
 	})();
 

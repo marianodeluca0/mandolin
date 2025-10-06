@@ -1,7 +1,123 @@
-import { start } from "repl";
-import { InputPromptType } from "../inputs";
 
-export type TextEffect =
+import errors from "../shared/errors";
+import * as readline from 'readline';
+import { SelectConfig } from '../types';
+
+export type InputPromptType = (question?: string, onAfterEnter?: (text: string) => void) => Promise<string>;
+
+export const InputPrompt: InputPromptType = async (question, onAfterEnter) => {
+
+    return new Promise((resolve) => {
+        
+        if (process.stdin.isTTY) {
+            process.stdin.setRawMode(false);
+            process.stdin.resume();
+        }
+
+        const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout,
+        });
+
+        rl.question(question || '', (ans: string) => {
+            onAfterEnter?.(ans);
+            rl.close();
+            process.stdin.pause();
+            resolve(ans);
+        });
+    });
+}
+
+function paintRow(options: (string | number | boolean)[], row: number, selected: boolean) {
+
+    readline.moveCursor(process.stdout, 0, -(options.length - row));
+    readline.cursorTo(process.stdout, 0);      // set cursor position
+    readline.clearLine(process.stdout, 0);
+    const option = options[row];
+    if (option) {
+
+        const line = selected ? `\x1b[47;30m  ${option}  \x1b[0m` : `  ${options[row]}`;
+        process.stdout.write(line);
+        readline.moveCursor(process.stdout, 0, options.length - row);   // go to the baseline
+    } else {
+
+        throw new Error(errors.invalidOptions);
+    }
+    readline.cursorTo(process.stdout, 0);      // set cursor position
+}
+
+export async function SelectPrompt(options: (string | number | boolean)[], config?: SelectConfig): Promise<string> {
+    if (options.length === 0) throw new Error(errors.invalidOptions);
+
+    return new Promise((resolve, reject) => {
+        const isTTY = !!(process.stdin.isTTY && process.stdout.isTTY);
+
+        if (!isTTY) {
+            const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+            options.forEach((o, i) => process.stdout.write(`${i + 1}. ${o}\n`));
+            rl.question(config?.noTTYFallbackText ?? '', (ans: string) => {
+                rl.close();
+                process.stdin.pause();
+                const n = Math.max(1, Math.min(options.length, parseInt(ans, 10) || 1));
+                resolve(String(options[n - 1] ?? ''));
+            });
+            return;
+        }
+
+        readline.emitKeypressEvents(process.stdin);
+        process.stdin.removeAllListeners("keypress");
+        if (process.stdin.isTTY) {
+            process.stdin.setRawMode(true);
+            process.stdin.resume();
+        }
+
+        process.stdout.write("\x1b[?25l")
+
+        // initial render
+        options.forEach((opt, i) => {
+            const line = i === 0 ? `\x1b[47;30m  ${opt}  \x1b[0m` : `  ${opt}`;
+            process.stdout.write(line + "\n");
+        });
+
+        let index = 0;
+        const onKeypress = (_: string, key: readline.Key) => {
+            if (key?.name === "up") {
+                const old = index;
+                index = (index - 1 + options.length) % options.length;
+                paintRow(options, old, false);
+                paintRow(options, index, true);
+            } else if (key?.name === "down") {
+                const old = index;
+                index = (index + 1) % options.length;
+                paintRow(options, old, false);
+                paintRow(options, index, true);
+            } else if (key?.name === "return" || key?.name === "enter") {
+                teardown();
+                const text = String(options[index] ?? '');
+                config?.onAfterSelection?.(text);
+                resolve(text);
+            } else if (key?.ctrl && key?.name === "c") {
+                teardown();
+                close();
+                process.stdout.write(errors.aborted);
+                config?.onCancel?.();
+                reject(new Error(errors.aborted));
+            }
+        };
+
+        const teardown = () => {
+            process.stdout.write("\x1b[?25h");
+            if (process.stdin.isTTY) {
+                process.stdin.setRawMode(false);
+                process.stdin.pause();
+            }
+            process.stdin.off("keypress", onKeypress);
+        };
+        process.stdin.on("keypress", onKeypress);
+    });
+}
+
+type TextEffect =
     | 'reset'
     | 'bold'
     | 'dim'
@@ -12,7 +128,7 @@ export type TextEffect =
     | 'hidden'
     | 'strike';
 
-export const EFFECT_CODES: Record<TextEffect, number> = {
+const EFFECT_CODES: Record<TextEffect, number> = {
     reset: 0,
     bold: 1,
     dim: 2,
@@ -24,45 +140,74 @@ export const EFFECT_CODES: Record<TextEffect, number> = {
     strike: 9,
 };
 
-export class MlinBuilder {
-
-    private textValue = '';
-    private fg?: string;
-    private bg?: string;
-    private effects: TextEffect[] = [];
-
-    static text(text: string) {
-        const builder = new MlinBuilder();
-        builder.textValue = text;
-        return builder;
-    }
-
-    color(color: string) {
-        this.fg = color;
-        return this;
-    }
-
-    bgcolor(color: string) {
-        this.bg = color;
-        return this;
-    }
-
-    add(effect: TextEffect) {
-        this.effects.push(effect);
-        return this;
-    }
-
-    build() {
-        const seq: string[] = [];
-
-        for (const e of this.effects) seq.push(`\x1b[${EFFECT_CODES[e]}m`);
-        if (this.fg) seq.push(`\x1b[38;5;${this.fg}m`);
-        if (this.bg) seq.push(`\x1b[48;5;${this.bg}m`);
-
-        return `${seq.join('')}${this.textValue}\x1b[0m`;
-    }
-
-    toString() {
-        return this.build();
-    }
+export interface Styles {
+    color?: string | number;
+    bgcolor?: string | number;
+    effect?: TextEffect;
 }
+
+type Line = (string | (() => void));
+
+function color(text: string, color: string | number) {
+    return `\x1b[38;5;${color}m${text}\x1b[0m`;
+}
+
+function bgcolor(text: string, color: string | number) {
+    return `\x1b[48;5;${color}m${text}\x1b[0m`;
+}
+
+function effect(text: string, type: TextEffect) {
+    return `\x1b[${EFFECT_CODES[type]}m${text}`;
+}
+
+function clean() {
+    process.stdout.write("\x1Bc");
+}
+
+function close() {
+    process.stdin.pause();
+}
+
+export function text(text: string, styles?: Styles) {
+
+    let result = text;
+    if (styles?.effect) result = effect(result, styles.effect);
+    if (styles?.color) result = color(result, styles.color);
+    if (styles?.bgcolor) result = bgcolor(result, styles.bgcolor);
+    return result;
+}
+
+
+export class Terminal {
+
+    private lines: Line[] = [];
+
+    color = color;
+    bgcolor = bgcolor;
+    effect = effect;
+    clean = clean;
+    close = close;
+    text = text;
+
+    constructor(props?: Line[]) {
+        this.lines = props || [];
+    }
+
+    newLine(line: Line, styles?: Styles) {
+        this.lines.push(typeof line === 'string' ? this.text(line, styles) : line);
+    }
+
+    async draw(opt?: { clean?: boolean, closeStream?: boolean }) {
+
+        if (opt?.clean) this.clean();
+
+        for (const line of this.lines) {
+            if (typeof line === 'string') {
+                console.log(line);
+            } else {
+                await line();
+            }
+        }
+        if (opt?.closeStream) this.close();
+    }
+} 
