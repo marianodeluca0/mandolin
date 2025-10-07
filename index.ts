@@ -1,4 +1,4 @@
-import { InputPrompt, SelectPrompt, Styles, Terminal, text } from "./src/core/mlin";
+import { Components, InputPrompt, SelectPrompt, Spinner, Styles, Terminal, text } from "./src/core/mlin";
 
 export interface Theme {
 	primary: string;
@@ -30,79 +30,67 @@ if (require.main === module) {
 
 	(async () => {
 
-		// const terminal = new Terminal();
-		// terminal.newLine("➤  Simple design:  ", style);
-		// terminal.newLine("➤  Simple text:  ", style);
-		// terminal.draw();
-
-		// const advancedTerminal = new Terminal();
-		// advancedTerminal.newLine("➤  Enter name:  ", style2);
-		// advancedTerminal.newLine(async () => await InputPrompt());
-		// advancedTerminal.newLine("➤  Select one option:  ", style2);
-		// advancedTerminal.newLine(async () => await SelectPrompt([1, 2, 3]));
-		// advancedTerminal.newLine("nice", style2);
-		// await advancedTerminal.draw({ closeStream: true });
-
-		// await new Terminal([
-		// 	"text inline",
-		// 	"new terminal definition",
-		// 	"Its simple?",
-		// 	async () => await InputPrompt(),
-		// 	"yes very easy",
-		// 	async () => await SelectPrompt([1, 2, 3])
-		// ]).draw({ closeStream: true });
-
-		// await new Terminal([
-		// 	text("yes and customizzable", style),
-		// 	text("yes and customizzable", style2),
-		// 	async () => await InputPrompt(),
-		// 	"yes very customizzable",
-		// 	async () => await SelectPrompt([1, 2, 3])
-		// ]).draw({ closeStream: true });
-
-
-		// testing state injection
-
-		// interface T {
-		// 	name: string,
-		// 	type: string,
-		// }
-
-		// const interminal = new Terminal<T>();
-
-		// interminal.initState({ name: '', type: '' });
-
-		// interminal.newLine("Enter Name: ");
-		// interminal.newLine(async (state) => {
-		// 	state.name = await InputPrompt();
-		// 	return state;
-		// });
-
-		// interminal.newLine("Type: ");
-		// interminal.newLine(async (state) => {
-		// 	state.type = await SelectPrompt([ "type 1", "type 2", "type 3" ]);
-		// 	return state;
-		// });
-
-		// await interminal.draw({ closeStream: true });
-
-		// console.log(interminal.state);
-
-		// testing new promp api
-		interface ApiT {
-			name: string
-			type: string
+		// Stato del wizard
+		interface WizardState {
+			name: string;
+			language: string;
 		}
 
-		const apiTerminal = new Terminal<ApiT>();
+		// Istanziamo il terminale
+		const UIComponents = new Components();
 
-		apiTerminal.newLine("new inputline api");
-		apiTerminal.newInputLine((result, state) => ({ ...state, name: result }));
-		apiTerminal.newSelectLine([1, 2, 3, 4], (result, state) => ({ ...state, type: result }));
-		await apiTerminal.draw();
+		const wizard = new Terminal<WizardState>();
+		wizard.initState({ name: '', language: '' });
 
-		console.log(apiTerminal.state);
+		// Step 1 — Intro
+		wizard.newLine(text("🎩 Welcome to the Mandolin Wizard!", { effect: 'bold', color: 117 }));
+		wizard.newLine(text("Let's create your developer profile...\n"));
 
+		// Step 2 — Input: nome utente
+		wizard.newLine("What's your name?");
+		wizard.newInputLine((input, state) => ({
+			...state,
+			name: input || 'Anonymous'
+		}));
+
+		// Step 3 — Select: linguaggio preferito
+		wizard.newLine("\nChoose your favorite programming language:");
+		wizard.newSelectLine(["TypeScript", "Python", "Rust", "Go"], (selected, state) => ({
+			...state,
+			language: String(selected)
+		}));
+
+		// Step 4 — Spinner + output finale
+		wizard.newLine(async (state) => {
+			const spinner = new Spinner({ color: 33 }, "Creating profile");
+			spinner.start();
+			await new Promise((r) => setTimeout(r, 2000)); // Simula elaborazione
+			console.log(UIComponents.br());
+			spinner.stop(text("✔  Profile created successfully!", { color: 82 }));
+			return state;
+		});
+
+		// Step 5 — Riepilogo finale
+		wizard.newLine(async (state) => {
+			console.log(UIComponents.divider());
+			
+			console.log(
+				text("\n🎉 Setup complete!", { effect: 'bold', color: 82 })
+			);
+			console.log(
+				text(`User: ${state.name}`, { color: 81 })
+			);
+			console.log(
+				text(`Language: ${state.language}`, { color: 226 })
+			);
+			console.log(
+				text("\nThanks for using Mandolin!")
+			);
+			return state;
+		});
+
+		// Eseguiamo il wizard
+		await wizard.draw({ clean: true, closeStream: true });
 
 	})();
 
