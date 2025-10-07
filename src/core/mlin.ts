@@ -2,13 +2,14 @@
 import errors from "../shared/errors";
 import * as readline from 'readline';
 import { SelectConfig } from '../types';
+import { ValuesOf } from '@virtual-registry/ts-utils';
 
 export type InputPromptType = (question?: string, onAfterEnter?: (text: string) => void) => Promise<string>;
 
 export const InputPrompt: InputPromptType = async (question, onAfterEnter) => {
 
     return new Promise((resolve) => {
-        
+
         if (process.stdin.isTTY) {
             process.stdin.setRawMode(false);
             process.stdin.resume();
@@ -128,7 +129,7 @@ type TextEffect =
     | 'hidden'
     | 'strike';
 
-const EFFECT_CODES: Record<TextEffect, number> = {
+const EFFECT_CODES = {
     reset: 0,
     bold: 1,
     dim: 2,
@@ -138,7 +139,7 @@ const EFFECT_CODES: Record<TextEffect, number> = {
     inverse: 7,
     hidden: 8,
     strike: 9,
-};
+} as const;
 
 export interface Styles {
     color?: string | number;
@@ -146,7 +147,11 @@ export interface Styles {
     effect?: TextEffect;
 }
 
-type Line = (string | (() => void));
+type Line<S> = (string | ((state: S) => Promise<Partial<S>>));
+
+function ansiStyle(code: 38 | 48 | ValuesOf<typeof EFFECT_CODES>, type: string | TextEffect, close: boolean = true) {
+    return `\x1b[${code};5;${type}m${text}${close ? '\x1b[0m' : ''}`;
+}
 
 function color(text: string, color: string | number) {
     return `\x1b[38;5;${color}m${text}\x1b[0m`;
@@ -177,10 +182,12 @@ export function text(text: string, styles?: Styles) {
     return result;
 }
 
+type StateAdapter<S> = ((result: string, state: S) => S);
 
-export class Terminal {
+export class Terminal<S> {
 
-    private lines: Line[] = [];
+    private lines: Line<S>[] = [];
+    state: S | null = null;
 
     color = color;
     bgcolor = bgcolor;
@@ -189,12 +196,30 @@ export class Terminal {
     close = close;
     text = text;
 
-    constructor(props?: Line[]) {
+    constructor(props?: Line<S>[]) {
         this.lines = props || [];
     }
 
-    newLine(line: Line, styles?: Styles) {
+    newLine(line: Line<S>, styles?: Styles) {
         this.lines.push(typeof line === 'string' ? this.text(line, styles) : line);
+    }
+
+    newInputLine(stateAdapter: StateAdapter<S>) {
+        this.newLine(async (state) => {
+            const result = await InputPrompt();
+            return stateAdapter(result, this.state || {} as S);
+        })
+    }
+
+    newSelectLine(options: (number | string | boolean)[], stateAdapter: StateAdapter<S>) {
+        this.newLine(async (state) => {
+            const result = await SelectPrompt(options);
+            return stateAdapter(result, this.state || {} as S);
+        })
+    }
+
+    initState(state: S) {
+        this.state = state;
     }
 
     async draw(opt?: { clean?: boolean, closeStream?: boolean }) {
@@ -205,7 +230,8 @@ export class Terminal {
             if (typeof line === 'string') {
                 console.log(line);
             } else {
-                await line();
+                const asyncLineResult = await line(this.state || {} as S);
+                this.state = { ...(this.state || {} as S), ...asyncLineResult };
             }
         }
         if (opt?.closeStream) this.close();
