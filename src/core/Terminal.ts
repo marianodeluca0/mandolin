@@ -1,37 +1,16 @@
 
-import { ValuesOf } from '@virtual-registry/ts-utils';
 import * as readline from 'readline';
+import { ansiEffects, ansistyle } from '../ansiiStyles';
+import commands from '../commands';
+import { formatError } from '../errors';
+import stream from '../stream';
+import { InputPromptType, Line, SelectConfig, StateAdapter, Styles } from '../types';
+import setup from '../setup';
 
-export type Key = { name?: string; ctrl?: boolean };
-
-export interface SelectConfig {
-    noTTYFallbackText?: string;
-    onAfterSelection?(value: string): void;
-    onCancel?(): void;
-}
-
-const errors = {
-    invalidOptions: "\ninvalid options provided\n",
-    aborted: "\nopeation cancelled\n"
-}
-
-const stream = {
-    in: process.stdin,
-    out: process.stdout,
-}
-
-const commands = {
-    close: () => stream.in.pause(),
-    clean: () => stream.out.write("\x1Bc"),
-    showCursor: () => stream.out.write("\x1b[?25h"),
-    hideCursor: () => stream.out.write("\x1b[?25l"),
-    highLightLine: (text: string | number | boolean) => `\x1b[47;30m  ${text}  \x1b[0m`,
-    cursorTo: (stream: NodeJS.WriteStream) => readline.cursorTo(stream, 0),
-    clearLine: () => readline.clearLine(stream.out, 0),
-    cursorToStart: () => readline.cursorTo(stream.out, 0),
-};
-
-export type InputPromptType = (question?: string, onAfterEnter?: (text: string) => void) => Promise<string>;
+/**
+ * initialize sigint / exit fallback events
+ */
+setup();
 
 export const InputPrompt: InputPromptType = async (question, onAfterEnter) => {
 
@@ -69,13 +48,18 @@ function paintRow(options: (string | number | boolean)[], row: number, selected:
         readline.moveCursor(stream.out, 0, options.length - row);   // go to the baseline
     } else {
 
-        throw new Error(errors.invalidOptions);
+        const error = formatError.error("row drawing", "invalid options provided!");
+        throw new Error(error.message);
     }
     readline.cursorTo(stream.out, 0);      // set cursor position
 }
 
 export async function SelectPrompt(options: (string | number | boolean)[], config?: SelectConfig): Promise<string> {
-    if (options.length === 0) throw new Error(errors.invalidOptions);
+
+    if (options.length === 0) {
+        const error = formatError.error("SelectPromp initialization", "invalid options provided!");
+        throw new Error(error.message);
+    }
 
     return new Promise((resolve, reject) => {
         const isTTY = !!(stream.in.isTTY && stream.out.isTTY);
@@ -130,11 +114,13 @@ export async function SelectPrompt(options: (string | number | boolean)[], confi
                 resolve(text);
             } else if (key?.ctrl && key?.name === "c") {
 
+                const error = formatError.warning("SelectPromp cancel", "Operation canceled");
+
                 teardown();
                 commands.close();
-                stream.out.write(errors.aborted);
+                stream.out.write(error.message);
                 config?.onCancel?.();
-                reject(new Error(errors.aborted));
+                reject(new Error(error.message));
             }
         };
 
@@ -150,54 +136,10 @@ export async function SelectPrompt(options: (string | number | boolean)[], confi
     });
 }
 
-type TextEffect =
-    | 'reset'
-    | 'bold'
-    | 'dim'
-    | 'italic'
-    | 'underline'
-    | 'blink'
-    | 'inverse'
-    | 'hidden'
-    | 'strike';
-
-const EFFECT_CODES = {
-    reset: 0,
-    bold: 1,
-    dim: 2,
-    italic: 3,
-    underline: 4,
-    blink: 5,
-    inverse: 7,
-    hidden: 8,
-    strike: 9,
-} as const;
-
-export interface Styles {
-    color?: string | number;
-    bgcolor?: string | number;
-    effect?: TextEffect;
-}
-
-type Line<S> = (string | ((state: S) => Promise<Partial<S>>));
-
-function ansistyle(type: ValuesOf<typeof EFFECT_CODES> | 38 | 48, text: string, color?: string | number) {
-
-    switch (type) {
-
-        case 38:
-        case 48:
-            return `\x1b[${type};5;${color || 0}m${text}\x1b[0m`;
-
-        default:
-            return `\x1b[${type}m${text}`;
-    }
-}
-
 export function text(text: string, styles?: Styles) {
 
     let result = text;
-    if (styles?.effect) result = ansistyle(EFFECT_CODES[styles.effect], result);
+    if (styles?.effect) result = ansistyle(ansiEffects[styles.effect], result);
     if (styles?.color) result = ansistyle(38, result, styles.color);
     if (styles?.bgcolor) result = ansistyle(48, result, styles.bgcolor);
     return result;
@@ -209,7 +151,7 @@ async function draw<S>(opt: { clean?: boolean, closeStream?: boolean, state?: S,
     let state = opt?.state;
     let lines = opt?.lines;
 
-    if (opt?.clean) commands.clean();
+    if (opt?.clean) commands.clearScreen();
 
     for (const line of lines) {
         if (typeof line === 'string') {
@@ -224,60 +166,11 @@ async function draw<S>(opt: { clean?: boolean, closeStream?: boolean, state?: S,
     return state;
 }
 
-export class Components {
-    divider() {
-        return text("===============================================================");
-    }
-    br() {
-        return text("\n");
-    }
-}
-
-export class Spinner {
-
-    private style?: Styles;
-    private frames: (string | number)[] = ["⠋", "⠙", "⠸", "⠴", "⠦", "⠇"];
-    private interval?: NodeJS.Timeout;
-    private active = false;
-    private prefix: string = "Loading"
-
-    constructor(style?: Styles, prefix?: string, frames?: (string | number)[]) {
-        if (frames) this.frames = frames;
-        if (style) this.style = style;
-        if (prefix) this.prefix = prefix;
-    }
-
-    start() {
-        if (this.active) return;
-        this.active = true;
-        let i = 0;
-        commands.hideCursor();
-
-        this.interval = setInterval(() => {
-            const frame = this.frames[i = (i + 1) % this.frames.length];
-            const line = `${this.prefix} ${frame}`;
-            readline.cursorTo(stream.out, 0);
-            stream.out.write(text(line, this.style));
-            stream.out.clearLine(1);
-        }, 100);
-    }
-
-    stop(message?: string) {
-        if (!this.active) return;
-        clearInterval(this.interval);
-        this.active = false;
-        readline.clearLine(stream.out, 0);
-        readline.cursorTo(stream.out, 0);
-        commands.showCursor();
-        if (message) stream.out.write(`${message}\n`);
-    }
-}
-
-type StateAdapter<S> = ((result: string, state: S) => S);
 
 export class Terminal<S> {
 
     private lines: Line<S>[] = [];
+
     state: S | null = null;
 
     constructor(props?: Line<S>[]) {
@@ -289,14 +182,14 @@ export class Terminal<S> {
     }
 
     newInputLine(stateAdapter: StateAdapter<S>) {
-        this.newLine(async (state) => {
+        this.newLine(async () => {
             const result = await InputPrompt();
             return stateAdapter(result, this.state || {} as S);
         })
     }
 
     newSelectLine(options: (number | string | boolean)[], stateAdapter: StateAdapter<S>) {
-        this.newLine(async (state) => {
+        this.newLine(async () => {
             const result = await SelectPrompt(options);
             return stateAdapter(result, this.state || {} as S);
         })
@@ -311,11 +204,3 @@ export class Terminal<S> {
         this.state = await draw<S>({ ...opt, state: this.state || {} as S, lines: this.lines }) || {} as S;
     }
 }
-
-process.on('exit', commands.showCursor);
-
-process.on('SIGINT', () => {
-    commands.showCursor();
-    stream.in.setRawMode?.(false);
-    stream.in.pause();
-});

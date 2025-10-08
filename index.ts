@@ -1,4 +1,6 @@
-import { Components, InputPrompt, SelectPrompt, Spinner, Styles, Terminal, text } from "./src/core/mlin";
+import { Components, Spinner } from "./src/core/Components";
+import { Terminal, text } from "./src/core/Terminal";
+import { Styles } from "./src/types";
 
 export interface Theme {
 	primary: string;
@@ -6,25 +8,6 @@ export interface Theme {
 	secondary: string;
 	contrastText: string;
 }
-
-const theme: Theme = {
-	primary: '129',
-	accent: '135',
-	secondary: '90',
-	contrastText: '246'
-}
-
-const style: Styles = {
-	color: 129,
-	bgcolor: 90,
-	effect: 'underline'
-};
-
-const style2: Styles = {
-	color: 90,
-	bgcolor: 129,
-	effect: 'bold'
-};
 
 if (require.main === module) {
 
@@ -73,7 +56,7 @@ if (require.main === module) {
 		// Step 5 — Riepilogo finale
 		wizard.newLine(async (state) => {
 			console.log(UIComponents.divider());
-			
+
 			console.log(
 				text("\n🎉 Setup complete!", { effect: 'bold', color: 82 })
 			);
