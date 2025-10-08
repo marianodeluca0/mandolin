@@ -1,6 +1,7 @@
-import { Components, Spinner } from "./src/core/Components";
-import { Terminal, text } from "./src/core/Terminal";
-import { Styles } from "./src/types";
+import { Components } from "./src/core/Components";
+import { Terminal } from "./src/core/Terminal";
+import { text } from "./src/helpers/text";
+import { Spinner } from "./src/core/Spinner";
 
 export interface Theme {
 	primary: string;
@@ -18,9 +19,6 @@ if (require.main === module) {
 			name: string;
 			language: string;
 		}
-
-		// Istanziamo il terminale
-		const UIComponents = new Components();
 
 		const wizard = new Terminal<WizardState>();
 		wizard.initState({ name: '', language: '' });
@@ -48,14 +46,13 @@ if (require.main === module) {
 			const spinner = new Spinner({ color: 33 }, "Creating profile");
 			spinner.start();
 			await new Promise((r) => setTimeout(r, 2000)); // Simula elaborazione
-			console.log(UIComponents.br());
 			spinner.stop(text("✔  Profile created successfully!", { color: 82 }));
 			return state;
 		});
 
 		// Step 5 — Riepilogo finale
 		wizard.newLine(async (state) => {
-			console.log(UIComponents.divider());
+			console.log(Components.divider());
 
 			console.log(
 				text("\n🎉 Setup complete!", { effect: 'bold', color: 82 })
