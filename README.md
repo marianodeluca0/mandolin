@@ -13,9 +13,9 @@
 ## 📦 Installation
 
 ```bash
-npm install mandolin
+npm install @virtual-registry/mandolin
 # or
-yarn add mandolin
+yarn add @virtual-registry/mandolin
 ```
 
 > Requirements: Node.js >= 18 and TTY support (recommended).

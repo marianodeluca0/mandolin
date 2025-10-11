@@ -1,30 +1,43 @@
 {
-  "name": "@virtual-registry/mandolin",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "dev": "ts-node index.ts",
-    "mlin": "./dist/index.js"
-  },
-  "type": "commonjs",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/marianodeluca0/mandolin.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/marianodeluca0/mandolin/issues"
-  },
-  "homepage": "https://github.com/marianodeluca0/mandolin#readme",
-  "devDependencies": {
-    "@types/node": "^24.5.2",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.9.2"
-  },
-  "dependencies": {
-    "@virtual-registry/ts-utils": "^1.0.2",
-    "dotenv": "^17.2.3"
-  }
+	"private": false,
+	"name": "@virtual-registry/mandolin",
+	"version": "1.1.9",
+	"description": "",
+	"files": [
+		"dist/",
+		"README.md"
+	],
+	"scripts": {
+		"build": "vite build",
+		"test": "vitest run",
+		"test:watch": "vitest",
+		"prepublishOnly": "npm run build",
+		"dev": "ts-node index.ts"
+	},
+	"type": "commonjs",
+	"main": "./dist/index.cjs.js",
+	"module": "./dist/index.es.js",
+	"types": "./dist/index.d.ts",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/marianodeluca0/mandolin.git"
+	},
+	"author": "",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/marianodeluca0/mandolin/issues"
+	},
+	"homepage": "https://github.com/marianodeluca0/mandolin#readme",
+	"devDependencies": {
+		"@types/node": "^24.7.1",
+		"ts-node": "^10.9.2",
+		"typescript": "^5.9.3",
+		"vite": "^7.1.9",
+		"vitest": "^3.2.4"
+	},
+	"dependencies": {
+		"@virtual-registry/ts-utils": "^1.0.2",
+		"dotenv": "^17.2.3",
+		"vite-plugin-dts": "^4.5.4"
+	}
 }

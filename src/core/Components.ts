@@ -1,4 +1,5 @@
 import { text } from "../helpers/text";
+import { Spinner } from "./Spinner";
 
 export const Components =  {
     divider() {
@@ -6,5 +7,7 @@ export const Components =  {
     },
     br() {
         return text("\n");
-    }
+    },
+    text,
+    Spinner
 }

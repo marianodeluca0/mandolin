@@ -33,5 +33,5 @@
     "moduleDetection": "auto",
     "noUncheckedSideEffectImports": false
   },
-  "include": ["src"]
+  "include": ["src", "tests"]
 }
