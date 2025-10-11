@@ -2,17 +2,16 @@ import { Components } from "./src/core/Components";
 import { Terminal } from "./src/core/Terminal";
 import { text } from "./src/helpers/text";
 import { Spinner } from "./src/core/Spinner";
+import * as dotenv from "dotenv";
 
-export interface Theme {
-	primary: string;
-	accent: string;
-	secondary: string;
-	contrastText: string;
-}
+dotenv.config();
+
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 if (require.main === module) {
 
 	(async () => {
+
 
 		// Stato del wizard
 		interface WizardState {
@@ -29,14 +28,14 @@ if (require.main === module) {
 
 		// Step 2 — Input: nome utente
 		wizard.newLine("What's your name?");
-		wizard.newInputLine((input, state) => ({
+		await wizard.newInputLine((input, state) => ({
 			...state,
 			name: input || 'Anonymous'
 		}));
 
 		// Step 3 — Select: linguaggio preferito
 		wizard.newLine("\nChoose your favorite programming language:");
-		wizard.newSelectLine(["TypeScript", "Python", "Rust", "Go"], (selected, state) => ({
+		await wizard.newSelectLine(["TypeScript", "Python", "Rust", "Go"], (selected, state) => ({
 			...state,
 			language: String(selected)
 		}));

@@ -24,6 +24,7 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@virtual-registry/ts-utils": "^1.0.2"
+    "@virtual-registry/ts-utils": "^1.0.2",
+    "dotenv": "^17.2.3"
   }
 }

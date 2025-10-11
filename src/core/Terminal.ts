@@ -1,5 +1,5 @@
 
-import { draw } from '../helpers/draw';
+import commands from '../commands';
 import { text } from '../helpers/text';
 import setup from '../setup';
 import { Line, StateAdapter, Styles } from '../types';
@@ -25,17 +25,17 @@ export class Terminal<S> {
         this.lines.push(typeof line === 'string' ? text(line, styles) : line);
     }
 
-    newInputLine(stateAdapter: StateAdapter<S>) {
+    async newInputLine(stateAdapter: StateAdapter<S>) {
         this.newLine(async () => {
             const result = await InputPrompt();
             return stateAdapter(result, this.state || {} as S);
         })
     }
 
-    newSelectLine(options: (number | string | boolean)[], stateAdapter: StateAdapter<S>) {
+    async newSelectLine(options: (number | string | boolean)[], stateAdapter: StateAdapter<S>) {
         this.newLine(async () => {
             const result = await SelectPrompt(options);
-            return stateAdapter(result, this.state || {} as S);
+            return stateAdapter(result, this.state || {} as S)
         })
     }
 
@@ -45,6 +45,17 @@ export class Terminal<S> {
 
     async draw(opt?: { clean?: boolean, closeStream?: boolean }) {
 
-        this.state = await draw<S>({ ...opt, state: this.state || {} as S, lines: this.lines }) || {} as S;
+        if (opt?.clean) commands.clearScreen();
+
+        for (const line of this.lines) {
+            if (typeof line === 'string') {
+                console.log(line);
+            } else {
+                const asyncLineResult = await line(this.state || {} as S);
+                this.state = { ...(this.state || {} as S), ...asyncLineResult };
+            }
+        }
+        if (opt?.closeStream) commands.close();
+
     }
 }
