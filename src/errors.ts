@@ -1,10 +1,5 @@
 import { ansiCodes } from "./ansiiStyles";
 
-const errorStyles = {
-    warning: ansiCodes.yellow,
-    error: ansiCodes.red,
-}
-
 export const formatError =  {
     warning(context: string, message: string) {
         return {

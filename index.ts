@@ -1,46 +1,41 @@
 import { Components } from "./src/core/Components";
+import { Spinner } from "./src/core/Spinner";
 import { Terminal } from "./src/core/Terminal";
 import { text } from "./src/helpers/text";
-import { Spinner } from "./src/core/Spinner";
-import * as dotenv from "dotenv";
-
-dotenv.config();
-
-const IS_PRODUCTION = process.env.NODE_ENV === 'production';
 
 if (require.main === module) {
 
 	(async () => {
 
-
-		// Stato del wizard
+		// Wizard State definition
 		interface WizardState {
 			name: string;
 			language: string;
 		}
 
 		const wizard = new Terminal<WizardState>();
+
 		wizard.initState({ name: '', language: '' });
 
-		// Step 1 — Intro
-		wizard.newLine(text("🎩 Welcome to the Mandolin Wizard!", { effect: 'bold', color: 117 }));
+		// Step 1 — CLI intro
+		wizard.newLine(text("🎩 Welcome to the Mandolin Wizard!", { effect: ['bold', 'underline', 'italic'], color: 117 }));
 		wizard.newLine(text("Let's create your developer profile...\n"));
 
-		// Step 2 — Input: nome utente
+		// Step 2 — Input Field
 		wizard.newLine("What's your name?");
-		await wizard.newInputLine((input, state) => ({
+		wizard.newInputLine((input, state) => ({
 			...state,
 			name: input || 'Anonymous'
 		}));
 
-		// Step 3 — Select: linguaggio preferito
+		// Step 3 — Select Field
 		wizard.newLine("\nChoose your favorite programming language:");
-		await wizard.newSelectLine(["TypeScript", "Python", "Rust", "Go"], (selected, state) => ({
+		wizard.newSelectLine(["TypeScript", "Python", "Rust", "Go"], (selected, state) => ({
 			...state,
 			language: String(selected)
 		}));
 
-		// Step 4 — Spinner + output finale
+		// Step 4 — Spinner + output
 		wizard.newLine(async (state) => {
 			const spinner = new Spinner({ color: 33 }, "Creating profile");
 			spinner.start();
@@ -49,12 +44,12 @@ if (require.main === module) {
 			return state;
 		});
 
-		// Step 5 — Riepilogo finale
+		// Step 5 — Composition
 		wizard.newLine(async (state) => {
-			console.log(Components.divider());
+			text(Components.divider());
 
 			console.log(
-				text("\n🎉 Setup complete!", { effect: 'bold', color: 82 })
+				text("\n🎉 Setup complete!", { effect: ['bold'], color: 82 })
 			);
 			console.log(
 				text(`User: ${state.name}`, { color: 81 })
@@ -72,5 +67,4 @@ if (require.main === module) {
 		await wizard.draw({ clean: true, closeStream: true });
 
 	})();
-
 }

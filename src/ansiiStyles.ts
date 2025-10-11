@@ -66,15 +66,15 @@ export const ansiCodes = {
     bgBrightWhite: 107,
 };
 
-export function ansistyle(type: ValuesOf<typeof ansiEffects> | 38 | 48, text: string, color?: string | number) {
+export function ansistyle(types: (ValuesOf<typeof ansiEffects>)[] | 38 | 48, text: string, color?: string | number) {
 
-    switch (type) {
+    switch (types) {
 
         case 38:
         case 48:
-            return `\x1b[${type};5;${color || 0}m${text}\x1b[0m`;
+            return `\x1b[${types};5;${color || 0}m${text}\x1b[0m`;
 
         default:
-            return `\x1b[${type}m${text}`;
+            return types.map(type => `\x1b[${type}m`).join("") + `${text}`;
     }
 }

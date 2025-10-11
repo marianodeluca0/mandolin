@@ -1,6 +1,6 @@
 
 import commands from '../commands';
-import { text } from '../helpers/text';
+import { text, TextHelper } from '../helpers/text';
 import setup from '../setup';
 import { Line, StateAdapter, Styles } from '../types';
 import { InputPrompt } from './InputPrompt';
@@ -25,14 +25,14 @@ export class Terminal<S> {
         this.lines.push(typeof line === 'string' ? text(line, styles) : line);
     }
 
-    async newInputLine(stateAdapter: StateAdapter<S>) {
+    newInputLine(stateAdapter: StateAdapter<S>) {
         this.newLine(async () => {
             const result = await InputPrompt();
             return stateAdapter(result, this.state || {} as S);
         })
     }
 
-    async newSelectLine(options: (number | string | boolean)[], stateAdapter: StateAdapter<S>) {
+    newSelectLine(options: (number | string | boolean)[], stateAdapter: StateAdapter<S>) {
         this.newLine(async () => {
             const result = await SelectPrompt(options);
             return stateAdapter(result, this.state || {} as S)
@@ -41,6 +41,10 @@ export class Terminal<S> {
 
     initState(state: S) {
         this.state = state;
+    }
+
+    async text(...args: Parameters<TextHelper>) {
+        console.log(text(...args));
     }
 
     async draw(opt?: { clean?: boolean, closeStream?: boolean }) {
