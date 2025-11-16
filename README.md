@@ -1,6 +1,6 @@
 # Mandolin — Elegant TUI Utilities for Node.js
 
-> **Work in progress** — This library is under active development. Some APIs may change in upcoming releases.
+> **Work in progress** — This library is under development. Some APIs may change in upcoming releases.
 
 ---
 
