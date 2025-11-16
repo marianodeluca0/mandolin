@@ -82,8 +82,6 @@ spinner.start();
 setTimeout(() => spinner.stop("Done!"), 2000);
 ```
 
----
-
 ### 🧱 Terminal<S>
 
 A small framework for building sequential CLI flows with shared state.
